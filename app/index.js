@@ -43,19 +43,16 @@ async function run(token, endpoint) {
   //fetching bot name
   const self = await bot.getSelf();
   console.log(`I've started, post me something @${self.nick}`);
-  console.log(credentials, credsBase64);
 
   bot.updateSubject.subscribe({
     next(update) {
-      // console.log(JSON.stringify({ update }, null, 2));
+      console.log(JSON.stringify({ update }, null, 2));
     }
   });
 
   //subscribing to incoming messages
   const messagesHandle = bot.subscribeToMessages().pipe(
     flatMap(async message => {
-      // console.log("YAYAY", message);
-
       messageToReturn.peer = message.peer;
       messageToReturn.id = message.id;
       if (message.content.type === "text" && message.attachment === null) {
@@ -98,7 +95,6 @@ async function run(token, endpoint) {
           })
         );
       } else if (message.attachment.type === "reply") {
-        console.log("message", message);
         if (message.content.type === "text") {
           const commentUrl =
             process.env.JIRA_ISSUE_CREATE + "/" + addedIssueKey + "/comment";
@@ -111,10 +107,17 @@ async function run(token, endpoint) {
             headers: headers,
             data: bodyData
           });
-          console.log("POSTED", postIssueToJira);
+
+          //sending response to the bot
+          const response = {
+            id: message.id,
+            text: "Comment has been added succesfully to the task",
+            peer: message.peer
+          };
+          sendTextToBot(bot, response);
         } else if (message.content.type === "document") {
           const attachmentUrl =
-            process.env.JIRA_ISSUE_CREATE_C +
+            process.env.JIRA_ISSUE_CREATE_ATTACHMENT +
             "/" +
             addedIssueKey +
             "/attachments";
@@ -145,11 +148,15 @@ async function run(token, endpoint) {
             body
           ) {
             if (error) throw new Error(error);
-
             console.log("OUTPUT", body);
           });
 
-          console.log("RESPONSE", postIssueToJira);
+          const response = {
+            id: message.id,
+            text: "File has been added succesfully to the task",
+            peer: message.peer
+          };
+          sendTextToBot(bot, response);
         }
       }
     })
@@ -162,7 +169,6 @@ async function run(token, endpoint) {
         const projectToPost = await fetchedProjects.filter(
           project => project.name === event.id
         );
-        console.log("POST", projectToPost);
         const dataToPost = {
           fields: {
             project: {
@@ -186,7 +192,6 @@ async function run(token, endpoint) {
         });
 
         // return the response to messenger
-        console.log("pro", postIssueToJira.data, projectToPost[0]);
         const responseText = formatJiraText(
           postIssueToJira.data,
           projectToPost[0],
@@ -240,7 +245,7 @@ const endpoint =
   process.env.BOT_ENDPOINT || "https://grpc-test.transmit.im:9443";
 
 run(token, endpoint)
-  .then(response => console.log("RESPONDED", response))
+  .then(response => console.log(response))
   .catch(error => {
     console.error(error);
     process.exit(1);
