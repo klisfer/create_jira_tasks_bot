@@ -4,7 +4,8 @@ const {
   MessageAttachment,
   ActionGroup,
   Action,
-  Button
+  Button,
+  Select
 } = require("@dlghq/dialog-bot-sdk");
 const { flatMap } = require("rxjs/operators");
 const axios = require("axios");
@@ -12,8 +13,8 @@ const { merge } = require("rxjs");
 const moment = require("moment");
 const fs = require("fs");
 const request = require("request");
-var util  = require('util');
-var fetch = require('isomorphic-fetch');
+var util = require("util");
+var fetch = require("isomorphic-fetch");
 
 dotenv.config();
 
@@ -42,7 +43,7 @@ async function run(token, endpoint) {
   //fetching bot name
   const self = await bot.getSelf();
   console.log(`I've started, post me something @${self.nick}`);
-  console.log(credentials,credsBase64);
+  console.log(credentials, credsBase64);
 
   bot.updateSubject.subscribe({
     next(update) {
@@ -87,7 +88,7 @@ async function run(token, endpoint) {
         });
         dropdownActions.push(stopAction);
 
-        // returning the projects to the messnger
+        // returning the projects to the messenger
         const mid = await bot.sendText(
           message.peer,
           "Select the project you want to add the task",
@@ -117,36 +118,38 @@ async function run(token, endpoint) {
             "/" +
             addedIssueKey +
             "/attachments";
-          const loc = process.env.FILE_UPLOAD_PATH + message.content.name;
-         
-          const imgUrl = process.env.FILE_UPLOAD_PATH + message.content.name; 
-          var options = { method: 'POST',
-          url: attachmentUrl,
-          headers: 
-           { 
-             Authorization: "Basic " + credsBase64,
-             'cache-control': 'no-cache,no-cache',
-             'X-Atlassian-Token': 'no-check',
-             'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' },
-          formData: 
-           { file: 
-              { value: fs.createReadStream(imgUrl),
-                options: 
-                 { filename: imgUrl,
-                   contentType: null } } } };
 
-            
-            
-    
-         
-           const postIssueToJira = await request(options, function (error, response, body) {
+          const fileUrl = process.env.FILE_UPLOAD_PATH + message.content.name;
+          const options = {
+            method: "POST",
+            url: attachmentUrl,
+            headers: {
+              Authorization: "Basic " + credsBase64,
+              "cache-control": "no-cache,no-cache",
+              "X-Atlassian-Token": "no-check",
+              "content-type":
+                "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW"
+            },
+            formData: {
+              file: {
+                value: fs.createReadStream(fileUrl),
+                options: { filename: fileUrl, contentType: null }
+              }
+            }
+          };
+
+          //http request to post the image or file as an attachment
+          const postIssueToJira = await request(options, function(
+            error,
+            response,
+            body
+          ) {
             if (error) throw new Error(error);
-          
-            console.log("OUTPUT",body);
 
-          });           
+            console.log("OUTPUT", body);
+          });
 
-          console.log("RESPONSE",postIssueToJira);
+          console.log("RESPONSE", postIssueToJira);
         }
       }
     })
@@ -181,9 +184,9 @@ async function run(token, endpoint) {
           headers: headers,
           data: dataToPost
         });
-        
-      
+
         // return the response to messenger
+        console.log("pro", postIssueToJira.data, projectToPost[0]);
         const responseText = formatJiraText(
           postIssueToJira.data,
           projectToPost[0],
@@ -245,14 +248,7 @@ run(token, endpoint)
 
 function formatJiraText(task, project, jiraTaskTitle) {
   const outputFormat =
-    "[" +
-    project.key +
-    "-" +
-    task.id +
-    "](" +
-    task.self +
-    ") :" +
-    jiraTaskTitle;
+    "[" + task.key + "](" + task.self + ") :" + jiraTaskTitle;
   return outputFormat;
 }
 
