@@ -47,7 +47,7 @@ async function run(token, endpoint) {
 
   bot.updateSubject.subscribe({
     next(update) {
-      // console.log(JSON.stringify({ update }, null, 2));
+      console.log(JSON.stringify({ update }, null, 2));
     }
   });
 
@@ -75,7 +75,7 @@ async function run(token, endpoint) {
         fetchedProjects.map(project => {
           dropdownActions.push(new SelectOption(project.name, project.name));
         });
-        console.log("dropdownActions", dropdownActions);
+
         //adding stop button to the actions
 
         // returning the projects to the messenger
@@ -153,7 +153,7 @@ async function run(token, endpoint) {
             body
           ) {
             if (error) throw new Error(error);
-            console.log("OUTPUT", body);
+            console.log(body);
           });
 
           const response = {
@@ -171,11 +171,10 @@ async function run(token, endpoint) {
   const actionsHandle = bot.subscribeToActions().pipe(
     flatMap(async event => {
       if (event.id !== "stop") {
-        console.log("event", event);
         const projectToPost = await fetchedProjects.filter(
           project => project.name === event.value
         );
-        console.log("projectToPost", projectToPost);
+
         const dataToPost = {
           fields: {
             project: {
